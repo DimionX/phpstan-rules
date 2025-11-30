@@ -22,18 +22,19 @@ includes:
 
 ## Ignoring Errors
 
-Only ignore errors for code that **never runs in production**. Common examples:
+Only ignore errors for code that is **never executed in production**. Typical examples include:
 
 - **Test files** (`*Test.php`, `*/Tests/*`, `*/tests/*`)
-- **Test helpers & utilities** used exclusively in tests
-- **Development scripts & tools**
-- **Fixture factories** for testing only
+- **Test helpers and utilities** used exclusively in tests
+- **Development-only scripts and tools**
+- **Fixture factories** used solely for testing
 - **Code generation scripts** used during development
 
 ```yaml
 # phpstan.neon
 parameters:
   ignoreErrors:
+    # Ignore files that are allowed to use dev-packages
     -
       identifier: dev.packageUsedInProductionRule
       path: '*/Tests/*'
