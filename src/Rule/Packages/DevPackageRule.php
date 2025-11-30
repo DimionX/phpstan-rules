@@ -50,7 +50,7 @@ class DevPackageRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $name = $this->parseName($node, $scope);
+        $name = $this->parseName($node);
         if (!$name) {
             return [];
         }
@@ -72,10 +72,10 @@ class DevPackageRule implements Rule
         return "Usage of dev package '$packageName' in production code is prohibited.";
     }
 
-    protected function parseName(Node $node, Scope $scope): ?string
+    protected function parseName(Node $node): ?string
     {
         return match (get_class($node)) {
-            UseItem::class => $scope->resolveName($node->name),    # use DevPackage\ClassName;
+            UseItem::class => $node->name->name,                   # use DevPackage\ClassName;
             New_::class => $node->class->name,                     # $var = new \DevPackage\ClassName();
             StaticCall::class => $node->class->name,               # $var = \DevPackage\ClassName::new();
             ClassConstFetch::class => $node->class->name,          # $var = \DevPackage\ClassName::class;
@@ -104,12 +104,15 @@ class DevPackageRule implements Rule
         }
 
         $path = realpath($path) ?: $path;
-        if (!preg_match('#vendor/([^/]+/[^/]+)/#', $path, $matches)) {
-            return null;
+        if (!preg_match('#phpstan.phar/vendor/([^/]+/[^/]+)/#', $path, $matches)) {
+            if (!preg_match('#vendor/([^/]+/[^/]+)/#', $path, $matches)) {
+                return null;
+            }
         }
 
-        if (array_key_exists($matches[1], $this->onlyDevPackages)) {
-            return $matches[1];
+        $package = $matches[1];
+        if (array_key_exists($package, $this->onlyDevPackages)) {
+            return $package;
         }
 
         return null;
@@ -117,7 +120,9 @@ class DevPackageRule implements Rule
 
     protected function isClass(string $class): bool
     {
-        return $this->reflectionProvider->hasClass($class);
+        return class_exists($class, true)
+            || interface_exists($class, true)
+            || trait_exists($class, true);
     }
 
     protected function isFunction(Scope $scope, string $name): bool
