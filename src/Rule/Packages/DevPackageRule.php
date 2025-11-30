@@ -75,14 +75,19 @@ class DevPackageRule implements Rule
     protected function parseName(Node $node, Scope $scope): ?string
     {
         return match (get_class($node)) {
-            UseItem::class => $scope->resolveName($node->name),   # use DevPackage\ClassName;
-            New_::class => $node->class->name,                    # $var = new \DevPackage\ClassName();
-            StaticCall::class => $node->class->name,              # $var = \DevPackage\ClassName::new();
-            ClassConstFetch::class => $node->class->name,         # $var = \DevPackage\ClassName::class;
-            Instanceof_::class => $node->class->name,             # $var instanceof \DevPackage\ClassName
-            FuncCall::class => $scope->resolveName($node->name),  # postJson()
+            UseItem::class => $scope->resolveName($node->name),    # use DevPackage\ClassName;
+            New_::class => $node->class->name,                     # $var = new \DevPackage\ClassName();
+            StaticCall::class => $node->class->name,               # $var = \DevPackage\ClassName::new();
+            ClassConstFetch::class => $node->class->name,          # $var = \DevPackage\ClassName::class;
+            Instanceof_::class => $node->class->name,              # $var instanceof \DevPackage\ClassName
+            FuncCall::class => $this->resolveFuncCallName($node),  # postJson()
             default => null,
         };
+    }
+
+    protected function resolveFuncCallName(FuncCall $node): ?string
+    {
+        return $node->name instanceof NodeName ? $node->name->toString() : null;
     }
 
     protected function parseDevPackage(Scope $scope, string $name): ?string
