@@ -1,0 +1,27 @@
+parameters:
+    paths:
+        - src
+        - tests
+
+    excludePaths:
+        - 'tests/**/Fixtures/**'
+
+    level: 5
+
+    ignoreErrors:
+        - '#PHPDoc tag @var#'
+
+        # Pest implicitly binds $this to the current test case
+        # @see https://pestphp.com/docs/underlying-test-case
+        -
+            message: '#^Undefined variable: \$this$#'
+            path: '*Test.php'
+        -
+            identifier: dev.packageUsedInProductionRule
+            paths:
+                - 'src/*'
+                - 'tests/*'
+
+includes:
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - extension.neon

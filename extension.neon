@@ -1,0 +1,15 @@
+parameters:
+    pathToComposerLockFile: %currentWorkingDirectory%/composer.lock
+    autoloadCheckTypes: ['psr-4']
+
+
+parametersSchema:
+    pathToComposerLockFile: string()
+    autoloadCheckTypes: arrayOf('string')
+
+services:
+    - DimionX\PHPStan\Factory\ComposerLockFactory(pathToComposerLockFile: %pathToComposerLockFile%)
+    -
+        factory: DimionX\PHPStan\Rule\Packages\DevPackageRule(autoloadCheckTypes: %autoloadCheckTypes%)
+        tags:
+            - phpstan.rules.rule

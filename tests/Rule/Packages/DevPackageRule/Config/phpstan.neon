@@ -1,0 +1,2 @@
+parameters:
+    pathToComposerLockFile: %rootDir%/../../../tests/Rule/Packages/DevPackageRule/Config/composer.lock
