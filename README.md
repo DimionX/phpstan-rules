@@ -11,9 +11,9 @@ Install the extension using [Composer](https://getcomposer.org/):
 composer require --dev dimionx/phpstan-rules
 ```
 
-## Configuration
+## Manual installation
 
-Add this to your `phpstan.neon`:
+For manual installation, add this to your `phpstan.neon`:
 
 ```yaml
 includes:

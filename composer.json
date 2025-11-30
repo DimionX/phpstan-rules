@@ -11,7 +11,11 @@
         }
     ],
     "keywords": [
-        "static analysis"
+        "phpstan",
+        "static analysis",
+        "phpstan-rule",
+        "composer",
+        "dev-dependencies"
     ],
     "extra": {
         "phpstan": {
