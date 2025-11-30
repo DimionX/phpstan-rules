@@ -5,11 +5,14 @@ namespace DimionX\PHPStan\Rule\Packages;
 use DimionX\PHPStan\Factory\ComposerLockFactory;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Instanceof_;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Name as NodeName;
 use PhpParser\Node\UseItem;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -17,21 +20,21 @@ use PHPStan\ShouldNotHappenException;
 
 class DevPackageRule implements Rule
 {
-    protected array $onlyDevClasses;
+    protected array $onlyDevPackages;
 
     /**
      * @throws ShouldNotHappenException
      */
     public function __construct(
+        private ReflectionProvider $reflectionProvider,
         ComposerLockFactory $composerLockFactory,
-        protected array $autoloadCheckTypes = ['psr-4'],
     ) {
         $packages = $composerLockFactory->read();
 
-        $dev = $this->getAllClassNames($packages['packages-dev']);
-        $prod = $this->getAllClassNames($packages['packages']);
+        $dev = $this->getNames($packages['packages-dev']);
+        $prod = $this->getNames($packages['packages']);
 
-        $this->onlyDevClasses = array_diff_key($dev, $prod);
+        $this->onlyDevPackages = array_diff_key($dev, $prod);
     }
 
     public function getNodeType(): string
@@ -47,10 +50,15 @@ class DevPackageRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $className = $this->parseClass($node);
-        if ($className && $this->isOnlyDevClass($className)) {
+        $name = $this->parseName($node, $scope);
+        if (!$name) {
+            return [];
+        }
+
+        $package = $this->parseDevPackage($scope, $name);
+        if ($package) {
             return [
-                RuleErrorBuilder::message(static::buildMessage($className))
+                RuleErrorBuilder::message(static::buildMessage($package))
                     ->identifier('dev.packageUsedInProductionRule')
                     ->build(),
             ];
@@ -59,56 +67,63 @@ class DevPackageRule implements Rule
         return [];
     }
 
-    public static function buildMessage(string $className): string
+    public static function buildMessage(string $packageName): string
     {
-        return "Usage of dev package class '$className' in production code is prohibited.";
+        return "Usage of dev package '$packageName' in production code is prohibited.";
     }
 
-    protected function parseClass(Node $node): ?string
+    protected function parseName(Node $node, Scope $scope): ?string
     {
         return match (get_class($node)) {
-            UseItem::class => $node->name->toString(),      # use DevPackage\ClassName;
-            New_::class => $node->class->name,              # $var = new \DevPackage\ClassName();
-            StaticCall::class => $node->class->name,        # $var = \DevPackage\ClassName::new();
-            ClassConstFetch::class => $node->class->name,   # $var = \DevPackage\ClassName::class;
-            Instanceof_::class => $node->class->name,       # $var instanceof \DevPackage\ClassName
+            UseItem::class => $scope->resolveName($node->name),   # use DevPackage\ClassName;
+            New_::class => $node->class->name,                    # $var = new \DevPackage\ClassName();
+            StaticCall::class => $node->class->name,              # $var = \DevPackage\ClassName::new();
+            ClassConstFetch::class => $node->class->name,         # $var = \DevPackage\ClassName::class;
+            Instanceof_::class => $node->class->name,             # $var instanceof \DevPackage\ClassName
+            FuncCall::class => $scope->resolveName($node->name),  # postJson()
             default => null,
         };
     }
 
-    protected function isOnlyDevClass(string $className): bool
+    protected function parseDevPackage(Scope $scope, string $name): ?string
     {
-        foreach ($this->onlyDevClasses as $namespace) {
-            if ($className === $namespace || str_starts_with($className, $namespace . '\\')) {
-                return true;
-            }
+        if ($this->isClass($name)) {
+            $classReflection = $this->reflectionProvider->getClass($name);
+            $path = $classReflection->getFileName();
+        } elseif ($this->isFunction($scope, $name)) {
+            $nodeName = new NodeName($name);
+            $functionReflection = $this->reflectionProvider->getFunction($nodeName, $scope);
+            $path = $functionReflection->getFileName();
+        } else {
+            return null;
         }
 
-        return false;
+        $path = realpath($path) ?: $path;
+        if (!preg_match('#vendor/([^/]+/[^/]+)/#', $path, $matches)) {
+            return null;
+        }
+
+        if (array_key_exists($matches[1], $this->onlyDevPackages)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
-    protected function getAllClassNames(array $packages): array
+    protected function isClass(string $class): bool
     {
-        $names = [];
-        foreach ($packages as $package) {
-            $autoloadSections = array_merge(
-                $package['autoload'] ?? [],
-                $package['autoload-dev'] ?? []
-            );
+        return $this->reflectionProvider->hasClass($class);
+    }
 
-            foreach ($autoloadSections as $type => $mappings) {
-                if (!in_array($type, $this->autoloadCheckTypes)) {
-                    continue;
-                }
+    protected function isFunction(Scope $scope, string $name): bool
+    {
+        return $this->reflectionProvider->hasFunction(nameNode: new NodeName($name), namespaceAnswerer: $scope);
+    }
 
-                /** @var string $className */
-                foreach ($mappings as $className => $path) {
-                    $className = rtrim($className, '\\');
-                    $names[$className] = $className;
-                }
-            }
-        }
+    protected function getNames(array $packages): array
+    {
+        $names = array_column($packages, 'name');
 
-        return $names;
+        return array_combine($names, $names);
     }
 }

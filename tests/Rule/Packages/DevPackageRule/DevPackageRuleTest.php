@@ -14,27 +14,33 @@ test('dev package rule - valid with empty packages', function () {
 test('dev package rule - invalid with empty packages', function () {
     /** @var DevPackageRuleTestCase $this */
 
-    $a = "DimionX\\OnlyDev\\Dev";
-    $b = "DimionX\\OnlyDev\\DevSecond";
+    $onlyDevPackage = "dimionx/only-dev-package";
 
     // useCase
-    $this->addError($a, 5);
+    $this->addError($onlyDevPackage, 6);
+    $this->addError($onlyDevPackage, 8);
 
     // newCase
-    $this->addError($a, 11);
-    $this->addError($b, 12);
+    $this->addError($onlyDevPackage, 14);
+    $this->addError($onlyDevPackage, 16);
 
     // staticCallCase
-    $this->addError($a, 17);
-    $this->addError($b, 18);
+    $this->addError($onlyDevPackage, 21);
+    $this->addError($onlyDevPackage, 23);
 
     // classConstFetchCase
-    $this->addError($a, 23);
-    $this->addError($b, 24);
+    $this->addError($onlyDevPackage, 28);
+    $this->addError($onlyDevPackage, 30);
 
     // instanceOfCase
-    $this->addError($a, 30);
-    $this->addError($b, 31);
+    $this->addError($onlyDevPackage, 36);
+    $this->addError($onlyDevPackage, 38);
+
+    // function call
+    $this->addError($onlyDevPackage, 43);
+
+    // const
+    $this->addError($onlyDevPackage, 48);
 
     $this->analyse(
         files: [__DIR__ . '/Fixtures/Invalid/InvalidDevPackage.php'],

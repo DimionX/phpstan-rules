@@ -1,0 +1,11 @@
+{
+    "name": "dimionx/only-dev-package",
+    "autoload": {
+        "psr-4": {
+            "DimionX\\OnlyDev\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    }
+}

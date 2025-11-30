@@ -1,38 +1,18 @@
 {
     "packages": [
         {
-            "name": "dimionx/example-only-prod-package",
-            "autoload": {
-                "psr-4": {
-                    "DimionX\\OnlyProduction\\": "src"
-                }
-            }
+            "name": "dimionx/only-prod-package"
         },
         {
-            "name": "dimionx/example-dev-prod-package",
-            "autoload": {
-                "psr-4": {
-                    "DimionX\\DevProduction\\": "src"
-                }
-            }
+            "name": "dimionx/dev-prod-package"
         }
     ],
     "packages-dev": [
         {
-            "name": "dimionx/example-dev-prod-package",
-            "autoload": {
-                "psr-4": {
-                    "DimionX\\DevProduction\\": "src"
-                }
-            }
+            "name": "dimionx/dev-prod-package"
         },
         {
-            "name": "dimionx/example-only-dev-package",
-            "autoload": {
-                "psr-4": {
-                    "DimionX\\OnlyDev\\": "src"
-                }
-            }
+            "name": "dimionx/only-dev-package"
         }
     ]
 }

@@ -1,0 +1,11 @@
+{
+    "name": "dimionx/dev-prod-package",
+    "autoload": {
+        "psr-4": {
+            "DimionX\\DevProd\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    }
+}

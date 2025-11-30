@@ -34,14 +34,34 @@
         "pestphp/pest": "^1.22 || ^2.0 || ^3.0",
         "pestphp/pest-plugin-parallel": "^1.2",
         "phpstan/phpstan-deprecation-rules": "^1.2 || ^2.0",
-        "spaze/coding-standard": "^1.8"
+        "spaze/coding-standard": "^1.8",
+        "dimionx/dev-prod-package": "dev-master",
+        "dimionx/only-dev-package": "dev-master",
+        "dimionx/only-prod-package": "dev-master"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/dev-prod-package"
+        },
+        {
+            "type": "path",
+            "url": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/only-dev-package"
+        },
+        {
+            "type": "path",
+            "url": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/only-prod-package"
+        }
+    ],
     "autoload": {
         "psr-4": {"DimionX\\PHPStan\\": "src"}
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "DimionX\\DevProd\\": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/dev-prod-package/src",
+            "DimionX\\OnlyDev\\": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/only-dev-package/src",
+            "DimionX\\OnlyProd\\": "tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/only-prod-package/src"
         }
     },
     "scripts": {
