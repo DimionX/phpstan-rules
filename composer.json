@@ -1,7 +1,7 @@
 {
     "name": "dimionx/phpstan-rules",
     "type": "phpstan-extension",
-    "description": "PHPStan rule to detect usage of Composer dev-dependency classes in production code, with powerful configuration to re-allow specific classes or namespaces in places where they should be allowed.",
+    "description": "Rule for PHPStan that detects when production code depends on classes from Composer dev-dependencies, with flexible configuration to selectively allow certain classes or namespaces where needed.",
     "license": "MIT",
     "authors": [
         {
