@@ -47,3 +47,28 @@ test('dev package rule - invalid with empty packages', function () {
         expectedErrors: $this->errors,
     );
 });
+
+test('dev package rule - valid uses of prod traits without dev imports', function () {
+    /** @var DevPackageRuleTestCase $this */
+    $this->analyse([__DIR__ . '/Fixtures/Valid/ValidUsesProdTraitWithoutDevImport.php'], []);
+});
+
+test('dev package rule - detects dev imports inside used prod traits', function () {
+    /** @var DevPackageRuleTestCase $this */
+    // Указание конкретной строки затруднительно.
+    // Поэтому в тесте просто ожидаем сообщение, не привязывая к строке.
+    $this->addError(
+        '',
+        5,
+        sprintf(
+            'File "%s" (used by production code) imports dev class %s.',
+            'tests/Rule/Packages/DevPackageRule/Fixtures/vendor/dimionx/only-prod-package/src/TraitWithDevImport.php',
+            'DimionX\OnlyDev\SomeDevClass'
+        )
+    );
+
+    $this->analyse(
+        files: [__DIR__ . '/Fixtures/Invalid/InvalidUsesProdTraitWithDevImport.php'],
+        expectedErrors: $this->errors,
+    );
+});
