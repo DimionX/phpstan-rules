@@ -223,6 +223,11 @@ class DevPackageRule implements Rule
         }
 
         $package = $matches[1];
+
+        if ($package === 'phpstan/phpstan') {
+            return null;
+        }
+
         if (array_key_exists($package, $this->onlyDevPackages)) {
             return $package;
         }
