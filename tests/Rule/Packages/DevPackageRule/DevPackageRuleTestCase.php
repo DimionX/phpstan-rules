@@ -30,9 +30,9 @@ class DevPackageRuleTestCase extends RuleTestCase
         ];
     }
 
-    public function addError(string $className, int $line): void
+    public function addError(string $className, int $line, ?string $rawMessage = null): void
     {
-        $this->errors[] = [DevPackageRule::buildMessage($className), $line];
+        $this->errors[] = [$rawMessage ?? DevPackageRule::buildMessage($className), $line];
     }
 
     public function getErrors(): array
