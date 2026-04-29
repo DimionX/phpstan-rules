@@ -58,7 +58,7 @@ class DevPackageRule implements Rule
         if ($node instanceof TraitUse) {
             foreach ($node->traits as $trait) {
                 $name = $trait->toString();
-                $errors = array_merge($errors, $this->checkSymbolAndItsFile($scope, $name));
+                $errors = array_merge($errors, $this->checkSymbolAndItsFile($scope, $node, $name));
             }
 
             return $errors;
@@ -66,7 +66,7 @@ class DevPackageRule implements Rule
 
         $name = $this->parseName($node);
         if ($name !== null) {
-            $errors = $this->checkSymbolAndItsFile($scope, $name);
+            $errors = $this->checkSymbolAndItsFile($scope, $node, $name);
         }
 
         return $errors;
@@ -76,7 +76,7 @@ class DevPackageRule implements Rule
      * Проверяет, не является ли сам символ dev-зависимостью,
      * а затем анализирует файл этого символа на наличие dev-импортов.
      */
-    private function checkSymbolAndItsFile(Scope $scope, string $name): array
+    private function checkSymbolAndItsFile(Scope $scope, Node $originalNode, string $name): array
     {
         $errors = [];
 
@@ -94,7 +94,7 @@ class DevPackageRule implements Rule
         if ($filePath !== null && !isset($this->checkedFiles[$filePath])) {
             $this->checkedFiles[$filePath] = true;
             // Проверяем содержимое файла на импорты dev-пакетов
-            $errors = array_merge($errors, $this->checkFileForDevImports($filePath));
+            $errors = array_merge($errors, $this->checkFileForDevImports($filePath, $scope, $originalNode));
         }
 
         return $errors;
@@ -130,7 +130,7 @@ class DevPackageRule implements Rule
      * Поддерживается обычный синтаксис: use Namespace\Class; (с алиасом или без).
      * Групповые импорты (use Vendor\{A, B}) не обрабатываются.
      */
-    private function checkFileForDevImports(string $filePath): array
+    private function checkFileForDevImports(string $filePath, Scope $scope, Node $originalNode): array
     {
         if (!is_file($filePath)) {
             return [];
@@ -145,7 +145,8 @@ class DevPackageRule implements Rule
         $errors = [];
         foreach ($matches as $match) {
             $className = $match[1];
-            if ($this->isDevPackageClass($className)) {
+            $package = $this->parseDevPackage($scope, $className);
+            if ($package !== null) {
                 $errors[] = RuleErrorBuilder::message(
                     sprintf(
                         'File "%s" (used by production code) imports dev class %s.',
@@ -154,44 +155,13 @@ class DevPackageRule implements Rule
                     )
                 )
                     ->identifier('dev.packageUsedInProductionRule')
+                    ->file($scope->getFile())
+                    ->line($originalNode->getStartLine())
                     ->build();
             }
         }
 
         return $errors;
-    }
-
-    /**
-     * Проверяет, принадлежит ли указанный класс dev-пакету,
-     * ориентируясь на путь в vendor-директории.
-     */
-    private function isDevPackageClass(string $className): bool
-    {
-        try {
-            // Используем ReflectionProvider вместо \ReflectionClass
-            if (!$this->reflectionProvider->hasClass($className)) {
-                return false;
-            }
-
-            $classReflection = $this->reflectionProvider->getClass($className);
-            $filePath = $classReflection->getFileName();
-            if ($filePath === null) {
-                return false;
-            }
-
-            $filePath = realpath($filePath) ?: $filePath;
-
-            if (preg_match('#vendor/([^/]+/[^/]+)/#', $filePath, $matches)) {
-                return array_key_exists($matches[1], $this->onlyDevPackages);
-            }
-            if (preg_match('#phpstan\.phar/vendor/([^/]+/[^/]+)/#', $filePath, $matches)) {
-                return array_key_exists($matches[1], $this->onlyDevPackages);
-            }
-        } catch (\Throwable) {
-            // ignore
-        }
-
-        return false;
     }
 
     private function getRelativePath(string $absolutePath): string
@@ -231,6 +201,11 @@ class DevPackageRule implements Rule
     {
         if ($this->isClass($name)) {
             $classReflection = $this->reflectionProvider->getClass($name);
+
+            if ($classReflection->isInternal()) {
+                return null;
+            }
+
             $path = $classReflection->getFileName();
         } elseif ($this->isFunction($scope, $name)) {
             $nodeName = new NodeName($name);
